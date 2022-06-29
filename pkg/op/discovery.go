@@ -3,8 +3,8 @@ package op
 import (
 	"net/http"
 
-	httphelper "github.com/zitadel/oidc/pkg/http"
-	"github.com/zitadel/oidc/pkg/oidc"
+	httphelper "github.com/trustasia-com/oidc/pkg/http"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 func discoveryHandler(c Configuration, s Signer) func(http.ResponseWriter, *http.Request) {

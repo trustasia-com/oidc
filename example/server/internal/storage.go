@@ -8,12 +8,13 @@ import (
 	"math/big"
 	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/text/language"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/oidc"
-	"github.com/zitadel/oidc/pkg/op"
+	"github.com/google/uuid"
+	"golang.org/x/text/language"
+
+	"github.com/trustasia-com/oidc/pkg/oidc"
+	"github.com/trustasia-com/oidc/pkg/op"
 )
 
 var (

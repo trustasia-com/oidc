@@ -6,13 +6,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/schema"
-	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/crypto"
-	httphelper "github.com/zitadel/oidc/pkg/http"
-	"github.com/zitadel/oidc/pkg/oidc"
+	"github.com/gorilla/schema"
+	"golang.org/x/oauth2"
+
+	"github.com/trustasia-com/oidc/pkg/crypto"
+	httphelper "github.com/trustasia-com/oidc/pkg/http"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 var (

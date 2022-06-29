@@ -8,13 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
-	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/client"
-	httphelper "github.com/zitadel/oidc/pkg/http"
-	"github.com/zitadel/oidc/pkg/oidc"
+	"github.com/google/uuid"
+	"golang.org/x/oauth2"
+
+	"github.com/trustasia-com/oidc/pkg/client"
+	httphelper "github.com/trustasia-com/oidc/pkg/http"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 const (

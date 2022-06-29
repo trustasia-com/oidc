@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/oidc"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 type IDTokenVerifier interface {

@@ -4,11 +4,12 @@ import (
 	"net/http"
 	"time"
 
-	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/client"
-	"github.com/zitadel/oidc/pkg/oidc"
+	"golang.org/x/oauth2"
+
+	"github.com/trustasia-com/oidc/pkg/client"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 //jwtProfileTokenSource implement the oauth2.TokenSource

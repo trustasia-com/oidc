@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	httphelper "github.com/zitadel/oidc/pkg/http"
-	"github.com/zitadel/oidc/pkg/oidc"
+	httphelper "github.com/trustasia-com/oidc/pkg/http"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 type JWTAuthorizationGrantExchanger interface {

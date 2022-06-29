@@ -3,7 +3,7 @@ package op_test
 import (
 	"testing"
 
-	"github.com/zitadel/oidc/pkg/op"
+	"github.com/trustasia-com/oidc/pkg/op"
 )
 
 func TestEndpoint_Path(t *testing.T) {

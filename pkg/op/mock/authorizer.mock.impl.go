@@ -4,12 +4,13 @@ import (
 	"context"
 	"testing"
 
-	"github.com/golang/mock/gomock"
-	"github.com/gorilla/schema"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/oidc"
-	"github.com/zitadel/oidc/pkg/op"
+	"github.com/golang/mock/gomock"
+	"github.com/gorilla/schema"
+
+	"github.com/trustasia-com/oidc/pkg/oidc"
+	"github.com/trustasia-com/oidc/pkg/op"
 )
 
 func NewAuthorizer(t *testing.T) op.Authorizer {

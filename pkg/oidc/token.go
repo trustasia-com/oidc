@@ -6,11 +6,12 @@ import (
 	"io/ioutil"
 	"time"
 
-	"golang.org/x/oauth2"
 	"gopkg.in/square/go-jose.v2"
 
-	"github.com/zitadel/oidc/pkg/crypto"
-	"github.com/zitadel/oidc/pkg/http"
+	"golang.org/x/oauth2"
+
+	"github.com/trustasia-com/oidc/pkg/crypto"
+	"github.com/trustasia-com/oidc/pkg/http"
 )
 
 const (

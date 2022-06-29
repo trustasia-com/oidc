@@ -6,14 +6,15 @@ import (
 	"net/http"
 	"time"
 
+	"gopkg.in/square/go-jose.v2"
+
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/schema"
 	"golang.org/x/text/language"
-	"gopkg.in/square/go-jose.v2"
 
-	httphelper "github.com/zitadel/oidc/pkg/http"
-	"github.com/zitadel/oidc/pkg/oidc"
+	httphelper "github.com/trustasia-com/oidc/pkg/http"
+	"github.com/trustasia-com/oidc/pkg/oidc"
 )
 
 const (

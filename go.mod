@@ -13,7 +13,6 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/stretchr/testify v1.7.4
 	github.com/zitadel/logging v0.3.3
-	github.com/zitadel/oidc v1.5.1
 	golang.org/x/oauth2 v0.0.0-20200902213428-5d25da1a8d43
 	golang.org/x/text v0.3.7
 	gopkg.in/square/go-jose.v2 v2.6.0

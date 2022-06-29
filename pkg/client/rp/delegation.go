@@ -1,7 +1,7 @@
 package rp
 
 import (
-	"github.com/zitadel/oidc/pkg/oidc/grants/tokenexchange"
+	"github.com/trustasia-com/oidc/pkg/oidc/grants/tokenexchange"
 )
 
 //DelegationTokenRequest is an implementation of TokenExchangeRequest

@@ -1,10 +1,10 @@
 # OpenID Connect SDK (client and server) for Go
 
 [![semantic-release](https://img.shields.io/badge/%20%20%F0%9F%93%A6%F0%9F%9A%80-semantic--release-e10079.svg)](https://github.com/semantic-release/semantic-release)
-[![Release](https://github.com/zitadel/oidc/workflows/Release/badge.svg)](https://github.com/zitadel/oidc/actions)
-[![license](https://badgen.net/github/license/zitadel/oidc/)](https://github.com/zitadel/oidc/blob/master/LICENSE)
-[![release](https://badgen.net/github/release/zitadel/oidc/stable)](https://github.com/zitadel/oidc/releases)
-[![Go Report Card](https://goreportcard.com/badge/github.com/zitadel/oidc)](https://goreportcard.com/report/github.com/zitadel/oidc)
+[![Release](https://github.com/trustasia-com/oidc/workflows/Release/badge.svg)](https://github.com/trustasia-com/oidc/actions)
+[![license](https://badgen.net/github/license/zitadel/oidc/)](https://github.com/trustasia-com/oidc/blob/master/LICENSE)
+[![release](https://badgen.net/github/release/zitadel/oidc/stable)](https://github.com/trustasia-com/oidc/releases)
+[![Go Report Card](https://goreportcard.com/badge/github.com/trustasia-com/oidc)](https://goreportcard.com/report/github.com/trustasia-com/oidc)
 [![codecov](https://codecov.io/gh/zitadel/oidc/branch/master/graph/badge.svg)](https://codecov.io/gh/zitadel/oidc)
 
 ![openid_certified](https://cloud.githubusercontent.com/assets/1454075/7611268/4d19de32-f97b-11e4-895b-31b2455a7ca6.png)
@@ -43,9 +43,9 @@ Check the `/example` folder where example code for different scenarios is locate
 ```bash
 # start oidc op server
 # oidc discovery http://localhost:9998/.well-known/openid-configuration
-go run github.com/zitadel/oidc/example/server
+go run github.com/trustasia-com/oidc/example/server
 # start oidc web client
-CLIENT_ID=web CLIENT_SECRET=secret ISSUER=http://localhost:9998/ SCOPES="openid profile" PORT=9999 go run github.com/zitadel/oidc/example/client/app
+CLIENT_ID=web CLIENT_SECRET=secret ISSUER=http://localhost:9998/ SCOPES="openid profile" PORT=9999 go run github.com/trustasia-com/oidc/example/client/app
 ```
 
 - open http://localhost:9999/login in your browser
@@ -62,7 +62,7 @@ CLIENT_ID=web CLIENT_SECRET=secret ISSUER=http://localhost:9998/ SCOPES="openid 
 
 ## Contributors
 
-<a href="https://github.com/zitadel/oidc/graphs/contributors">
+<a href="https://github.com/trustasia-com/oidc/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=zitadel/oidc" />
 </a>
 
@@ -118,4 +118,4 @@ See the exact licensing terms [here](./LICENSE)
 Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
 
 
-[^1]: https://github.com/zitadel/oidc/issues/135#issuecomment-950563892
+[^1]: https://github.com/trustasia-com/oidc/issues/135#issuecomment-950563892
