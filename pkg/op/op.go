@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	url2 "net/url"
 	"time"
 
 	"gopkg.in/square/go-jose.v2"
@@ -47,12 +48,12 @@ type OpenIDProvider interface {
 	Storage() Storage
 	Decoder() httphelper.Decoder
 	Encoder() httphelper.Encoder
-	IDTokenHintVerifier() IDTokenHintVerifier
-	AccessTokenVerifier() AccessTokenVerifier
+	IDTokenHintVerifier(r *http.Request) IDTokenHintVerifier
+	AccessTokenVerifier(r *http.Request) AccessTokenVerifier
 	Crypto() Crypto
 	DefaultLogoutRedirectURI() string
-	Signer() Signer
-	Probes() []ProbesFn
+	Signer(r *http.Request) (Signer, error)
+	Probes(r *http.Request) ([]ProbesFn, error)
 	HttpHandler() http.Handler
 }
 
@@ -71,8 +72,8 @@ func CreateRouter(o OpenIDProvider, interceptors ...HttpInterceptor) *mux.Router
 		handlers.AllowedOriginValidator(allowAllOrigins),
 	))
 	router.HandleFunc(healthEndpoint, healthHandler)
-	router.HandleFunc(readinessEndpoint, readyHandler(o.Probes()))
-	router.HandleFunc(oidc.DiscoveryEndpoint, discoveryHandler(o, o.Signer()))
+	//router.HandleFunc(readinessEndpoint, readyHandler(o.Probes()))
+	//router.HandleFunc(oidc.DiscoveryEndpoint, discoveryHandler(o, o.Signer()))
 	router.Handle(o.AuthorizationEndpoint().Relative(), intercept(authorizeHandler(o)))
 	router.NewRoute().Path(authCallbackPath(o)).Queries("id", "{id}").Handler(intercept(authorizeCallbackHandler(o)))
 	router.Handle(o.TokenEndpoint().Relative(), intercept(tokenHandler(o)))
@@ -85,9 +86,9 @@ func CreateRouter(o OpenIDProvider, interceptors ...HttpInterceptor) *mux.Router
 }
 
 //AuthCallbackURL builds the url for the redirect (with the requestID) after a successful login
-func AuthCallbackURL(o OpenIDProvider) func(string) string {
+func AuthCallbackURL(r *http.Request, o OpenIDProvider) func(string) string {
 	return func(requestID string) string {
-		return o.AuthorizationEndpoint().Absolute(o.Issuer()) + authCallbackPathSuffix + "?id=" + requestID
+		return o.AuthorizationEndpoint().Absolute(o.Issuer(r)) + authCallbackPathSuffix + "?id=" + requestID
 	}
 }
 
@@ -96,7 +97,7 @@ func authCallbackPath(o OpenIDProvider) string {
 }
 
 type Config struct {
-	Issuer                   string
+	//Issuer                   string
 	CryptoKey                [32]byte
 	DefaultLogoutRedirectURI string
 	CodeMethodS256           bool
@@ -119,10 +120,10 @@ type endpoints struct {
 }
 
 func NewOpenIDProvider(ctx context.Context, config *Config, storage Storage, opOpts ...Option) (OpenIDProvider, error) {
-	err := ValidateIssuer(config.Issuer)
-	if err != nil {
-		return nil, err
-	}
+	//err := ValidateIssuer(config.Issuer)
+	//if err != nil {
+	//	return nil, err
+	//}
 
 	o := &openidProvider{
 		config:    config,
@@ -137,9 +138,9 @@ func NewOpenIDProvider(ctx context.Context, config *Config, storage Storage, opO
 		}
 	}
 
-	keyCh := make(chan jose.SigningKey)
-	go storage.GetSigningKey(ctx, keyCh)
-	o.signer = NewSigner(ctx, storage, keyCh)
+	//keyCh := make(chan jose.SigningKey)
+	//go storage.GetSigningKey(ctx, keyCh)
+	//o.signer = NewSigner(ctx, storage, keyCh)
 
 	o.httpHandler = CreateRouter(o, o.interceptors...)
 
@@ -154,10 +155,10 @@ func NewOpenIDProvider(ctx context.Context, config *Config, storage Storage, opO
 }
 
 type openidProvider struct {
-	config              *Config
-	endpoints           *endpoints
-	storage             Storage
-	signer              Signer
+	config    *Config
+	endpoints *endpoints
+	storage   Storage
+	//signer              Signer
 	idTokenHintVerifier IDTokenHintVerifier
 	jwtProfileVerifier  JWTProfileVerifier
 	accessTokenVerifier AccessTokenVerifier
@@ -170,8 +171,12 @@ type openidProvider struct {
 	timer               <-chan time.Time
 }
 
-func (o *openidProvider) Issuer() string {
-	return o.config.Issuer
+func (o *openidProvider) Issuer(r *http.Request) string {
+	url := url2.URL{
+		Scheme: r.Proto,
+		Host:   r.Host,
+	}
+	return url.String()
 }
 
 func (o *openidProvider) AuthorizationEndpoint() Endpoint {
@@ -275,23 +280,23 @@ func (o *openidProvider) Encoder() httphelper.Encoder {
 	return o.encoder
 }
 
-func (o *openidProvider) IDTokenHintVerifier() IDTokenHintVerifier {
+func (o *openidProvider) IDTokenHintVerifier(r *http.Request) IDTokenHintVerifier {
 	if o.idTokenHintVerifier == nil {
-		o.idTokenHintVerifier = NewIDTokenHintVerifier(o.Issuer(), o.openIDKeySet())
+		o.idTokenHintVerifier = NewIDTokenHintVerifier(o.Issuer(r), o.openIDKeySet())
 	}
 	return o.idTokenHintVerifier
 }
 
-func (o *openidProvider) JWTProfileVerifier() JWTProfileVerifier {
+func (o *openidProvider) JWTProfileVerifier(r *http.Request) JWTProfileVerifier {
 	if o.jwtProfileVerifier == nil {
-		o.jwtProfileVerifier = NewJWTProfileVerifier(o.Storage(), o.Issuer(), 1*time.Hour, time.Second)
+		o.jwtProfileVerifier = NewJWTProfileVerifier(o.Storage(), o.Issuer(r), 1*time.Hour, time.Second)
 	}
 	return o.jwtProfileVerifier
 }
 
-func (o *openidProvider) AccessTokenVerifier() AccessTokenVerifier {
+func (o *openidProvider) AccessTokenVerifier(r *http.Request) AccessTokenVerifier {
 	if o.accessTokenVerifier == nil {
-		o.accessTokenVerifier = NewAccessTokenVerifier(o.Issuer(), o.openIDKeySet())
+		o.accessTokenVerifier = NewAccessTokenVerifier(o.Issuer(r), o.openIDKeySet())
 	}
 	return o.accessTokenVerifier
 }
@@ -311,15 +316,25 @@ func (o *openidProvider) DefaultLogoutRedirectURI() string {
 	return o.config.DefaultLogoutRedirectURI
 }
 
-func (o *openidProvider) Signer() Signer {
-	return o.signer
+func (o *openidProvider) Signer(r *http.Request) (Signer, error) {
+	ctx := context.Background()
+	key, err := o.storage.GetSigningKey(ctx, r)
+	if err != nil {
+		return nil, err
+	}
+	s, err := NewSigner(o.storage, key)
+	return s, err
 }
 
-func (o *openidProvider) Probes() []ProbesFn {
-	return []ProbesFn{
-		ReadySigner(o.Signer()),
-		ReadyStorage(o.Storage()),
+func (o *openidProvider) Probes(r *http.Request) ([]ProbesFn, error) {
+	s, err := o.Signer(r)
+	if err != nil {
+		return nil, err
 	}
+	return []ProbesFn{
+		ReadySigner(s),
+		ReadyStorage(o.Storage()),
+	}, nil
 }
 
 func (o *openidProvider) HttpHandler() http.Handler {
@@ -332,8 +347,8 @@ type openIDKeySet struct {
 
 //VerifySignature implements the oidc.KeySet interface
 //providing an implementation for the keys stored in the OP Storage interface
-func (o *openIDKeySet) VerifySignature(ctx context.Context, jws *jose.JSONWebSignature) ([]byte, error) {
-	keySet, err := o.Storage.GetKeySet(ctx)
+func (o *openIDKeySet) VerifySignature(ctx context.Context, r *http.Request, jws *jose.JSONWebSignature) ([]byte, error) {
+	keySet, err := o.Storage.GetKeySet(ctx, r)
 	if err != nil {
 		return nil, fmt.Errorf("error fetching keys: %w", err)
 	}

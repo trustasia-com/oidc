@@ -21,7 +21,7 @@ func JWTProfile(w http.ResponseWriter, r *http.Request, exchanger JWTAuthorizati
 		RequestError(w, r, err)
 	}
 
-	tokenRequest, err := VerifyJWTAssertion(r.Context(), profileRequest.Assertion, exchanger.JWTProfileVerifier())
+	tokenRequest, err := VerifyJWTAssertion(r.Context(), r, profileRequest.Assertion, exchanger.JWTProfileVerifier())
 	if err != nil {
 		RequestError(w, r, err)
 		return

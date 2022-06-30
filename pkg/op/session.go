@@ -11,7 +11,7 @@ import (
 type SessionEnder interface {
 	Decoder() httphelper.Decoder
 	Storage() Storage
-	IDTokenHintVerifier() IDTokenHintVerifier
+	IDTokenHintVerifier(r *http.Request) IDTokenHintVerifier
 	DefaultLogoutRedirectURI() string
 }
 
@@ -27,7 +27,7 @@ func EndSession(w http.ResponseWriter, r *http.Request, ender SessionEnder) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	session, err := ValidateEndSessionRequest(r.Context(), req, ender)
+	session, err := ValidateEndSessionRequest(r.Context(), r, req, ender)
 	if err != nil {
 		RequestError(w, r, err)
 		return
@@ -57,12 +57,12 @@ func ParseEndSessionRequest(r *http.Request, decoder httphelper.Decoder) (*oidc.
 	return req, nil
 }
 
-func ValidateEndSessionRequest(ctx context.Context, req *oidc.EndSessionRequest, ender SessionEnder) (*EndSessionRequest, error) {
+func ValidateEndSessionRequest(ctx context.Context, r *http.Request, req *oidc.EndSessionRequest, ender SessionEnder) (*EndSessionRequest, error) {
 	session := new(EndSessionRequest)
 	if req.IdTokenHint == "" {
 		return session, nil
 	}
-	claims, err := VerifyIDTokenHint(ctx, req.IdTokenHint, ender.IDTokenHintVerifier())
+	claims, err := VerifyIDTokenHint(ctx, r, req.IdTokenHint, ender.IDTokenHintVerifier(r))
 	if err != nil {
 		return nil, oidc.ErrInvalidRequest().WithDescription("id_token_hint invalid").WithParent(err)
 	}

@@ -9,7 +9,7 @@ import (
 
 func discoveryHandler(c Configuration, s Signer) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		Discover(w, CreateDiscoveryConfig(c, s))
+		Discover(w, CreateDiscoveryConfig(r, c, s))
 	}
 }
 
@@ -17,16 +17,16 @@ func Discover(w http.ResponseWriter, config *oidc.DiscoveryConfiguration) {
 	httphelper.MarshalJSON(w, config)
 }
 
-func CreateDiscoveryConfig(c Configuration, s Signer) *oidc.DiscoveryConfiguration {
+func CreateDiscoveryConfig(r *http.Request, c Configuration, s Signer) *oidc.DiscoveryConfiguration {
 	return &oidc.DiscoveryConfiguration{
-		Issuer:                                     c.Issuer(),
-		AuthorizationEndpoint:                      c.AuthorizationEndpoint().Absolute(c.Issuer()),
-		TokenEndpoint:                              c.TokenEndpoint().Absolute(c.Issuer()),
-		IntrospectionEndpoint:                      c.IntrospectionEndpoint().Absolute(c.Issuer()),
-		UserinfoEndpoint:                           c.UserinfoEndpoint().Absolute(c.Issuer()),
-		RevocationEndpoint:                         c.RevocationEndpoint().Absolute(c.Issuer()),
-		EndSessionEndpoint:                         c.EndSessionEndpoint().Absolute(c.Issuer()),
-		JwksURI:                                    c.KeysEndpoint().Absolute(c.Issuer()),
+		Issuer:                                     c.Issuer(r),
+		AuthorizationEndpoint:                      c.AuthorizationEndpoint().Absolute(c.Issuer(r)),
+		TokenEndpoint:                              c.TokenEndpoint().Absolute(c.Issuer(r)),
+		IntrospectionEndpoint:                      c.IntrospectionEndpoint().Absolute(c.Issuer(r)),
+		UserinfoEndpoint:                           c.UserinfoEndpoint().Absolute(c.Issuer(r)),
+		RevocationEndpoint:                         c.RevocationEndpoint().Absolute(c.Issuer(r)),
+		EndSessionEndpoint:                         c.EndSessionEndpoint().Absolute(c.Issuer(r)),
+		JwksURI:                                    c.KeysEndpoint().Absolute(c.Issuer(r)),
 		ScopesSupported:                            Scopes(c),
 		ResponseTypesSupported:                     ResponseTypes(c),
 		GrantTypesSupported:                        GrantTypes(c),

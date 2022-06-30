@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/rsa"
 	"errors"
+	"net/http"
 
 	"gopkg.in/square/go-jose.v2"
 )
@@ -25,7 +26,7 @@ var (
 // - dynamically aggregated by request for OAuth JWT Profile Assertion -> `jwtProfileKeySet`
 type KeySet interface {
 	//VerifySignature verifies the signature with the given keyset and returns the raw payload
-	VerifySignature(ctx context.Context, jws *jose.JSONWebSignature) (payload []byte, err error)
+	VerifySignature(ctx context.Context, r *http.Request, jws *jose.JSONWebSignature) (payload []byte, err error)
 }
 
 //GetKeyIDAndAlg returns the `kid` and `alg` claim from the JWS header

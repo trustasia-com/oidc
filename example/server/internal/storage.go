@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"fmt"
 	"math/big"
+	"net/http"
 	"time"
 
 	"gopkg.in/square/go-jose.v2"
@@ -281,24 +282,25 @@ func (s *storage) RevokeToken(ctx context.Context, token string, userID string, 
 
 //GetSigningKey implements the op.Storage interface
 //it will be called when creating the OpenID Provider
-func (s *storage) GetSigningKey(ctx context.Context, keyCh chan<- jose.SigningKey) {
+func (s *storage) GetSigningKey(ctx context.Context, r *http.Request) (jose.SigningKey, error) {
 	//in this example the signing key is a static rsa.PrivateKey and the algorithm used is RS256
 	//you would obviously have a more complex implementation and store / retrieve the key from your database as well
 	//
 	//the idea of the signing key channel is, that you can (with what ever mechanism) rotate your signing key and
 	//switch the key of the signer via this channel
-	keyCh <- jose.SigningKey{
+	keyCh := jose.SigningKey{
 		Algorithm: jose.SignatureAlgorithm(s.signingKey.Algorithm), //always tell the signer with algorithm to use
 		Key: jose.JSONWebKey{
 			KeyID: s.signingKey.ID, //always give the key an id so, that it will include it in the token header as `kid` claim
 			Key:   s.signingKey.Key,
 		},
 	}
+	return keyCh, nil
 }
 
 //GetKeySet implements the op.Storage interface
 //it will be called to get the current (public) keys, among others for the keys_endpoint or for validating access_tokens on the userinfo_endpoint, ...
-func (s *storage) GetKeySet(ctx context.Context) (*jose.JSONWebKeySet, error) {
+func (s *storage) GetKeySet(ctx context.Context, r *http.Request) (*jose.JSONWebKeySet, error) {
 	//as mentioned above, this example only has a single signing key without key rotation,
 	//so it will directly use its public key
 	//

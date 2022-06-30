@@ -82,7 +82,7 @@ func (i *inflight) result() ([]jose.JSONWebKey, error) {
 	return i.keys, i.err
 }
 
-func (r *remoteKeySet) VerifySignature(ctx context.Context, jws *jose.JSONWebSignature) ([]byte, error) {
+func (r *remoteKeySet) VerifySignature(ctx context.Context, h *http.Request, jws *jose.JSONWebSignature) ([]byte, error) {
 	keyID, alg := oidc.GetKeyIDAndAlg(jws)
 	if alg == "" {
 		alg = r.defaultAlg

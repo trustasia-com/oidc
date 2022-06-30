@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/trustasia-com/oidc/pkg/oidc"
@@ -63,7 +64,7 @@ func NewIDTokenHintVerifier(issuer string, keySet oidc.KeySet) IDTokenHintVerifi
 
 //VerifyIDTokenHint validates the id token according to
 //https://openid.net/specs/openid-connect-core-1_0.html#IDTokenValidation
-func VerifyIDTokenHint(ctx context.Context, token string, v IDTokenHintVerifier) (oidc.IDTokenClaims, error) {
+func VerifyIDTokenHint(ctx context.Context, r *http.Request, token string, v IDTokenHintVerifier) (oidc.IDTokenClaims, error) {
 	claims := oidc.EmptyIDTokenClaims()
 
 	decrypted, err := oidc.DecryptToken(token)
@@ -79,7 +80,7 @@ func VerifyIDTokenHint(ctx context.Context, token string, v IDTokenHintVerifier)
 		return nil, err
 	}
 
-	if err = oidc.CheckSignature(ctx, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
+	if err = oidc.CheckSignature(ctx, r, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
 		return nil, err
 	}
 

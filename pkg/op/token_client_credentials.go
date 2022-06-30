@@ -23,7 +23,7 @@ func ClientCredentialsExchange(w http.ResponseWriter, r *http.Request, exchanger
 		return
 	}
 
-	resp, err := CreateClientCredentialsTokenResponse(r.Context(), validatedRequest, exchanger, client)
+	resp, err := CreateClientCredentialsTokenResponse(r.Context(), r, validatedRequest, exchanger, client)
 	if err != nil {
 		RequestError(w, r, err)
 		return
@@ -101,8 +101,8 @@ func AuthorizeClientCredentialsClient(ctx context.Context, request *oidc.ClientC
 	return client, nil
 }
 
-func CreateClientCredentialsTokenResponse(ctx context.Context, tokenRequest TokenRequest, creator TokenCreator, client Client) (*oidc.AccessTokenResponse, error) {
-	accessToken, _, validity, err := CreateAccessToken(ctx, tokenRequest, AccessTokenTypeJWT, creator, client, "")
+func CreateClientCredentialsTokenResponse(ctx context.Context, r *http.Request, tokenRequest TokenRequest, creator TokenCreator, client Client) (*oidc.AccessTokenResponse, error) {
+	accessToken, _, validity, err := CreateAccessToken(ctx, r, tokenRequest, AccessTokenTypeJWT, creator, client, "")
 	if err != nil {
 		return nil, err
 	}

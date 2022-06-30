@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"gopkg.in/square/go-jose.v2"
@@ -73,7 +74,7 @@ func (v *jwtProfileVerifier) CheckSubject(request *oidc.JWTTokenRequest) error {
 //VerifyJWTAssertion verifies the assertion string from JWT Profile (authorization grant and client authentication)
 //
 //checks audience, exp, iat, signature and that issuer and sub are the same
-func VerifyJWTAssertion(ctx context.Context, assertion string, v JWTProfileVerifier) (*oidc.JWTTokenRequest, error) {
+func VerifyJWTAssertion(ctx context.Context, r *http.Request, assertion string, v JWTProfileVerifier) (*oidc.JWTTokenRequest, error) {
 	request := new(oidc.JWTTokenRequest)
 	payload, err := oidc.ParseToken(assertion, request)
 	if err != nil {
@@ -98,7 +99,7 @@ func VerifyJWTAssertion(ctx context.Context, assertion string, v JWTProfileVerif
 
 	keySet := &jwtProfileKeySet{v.Storage(), request.Issuer}
 
-	if err = oidc.CheckSignature(ctx, assertion, payload, request, nil, keySet); err != nil {
+	if err = oidc.CheckSignature(ctx, r, assertion, payload, request, nil, keySet); err != nil {
 		return nil, err
 	}
 	return request, nil
@@ -121,7 +122,7 @@ type jwtProfileKeySet struct {
 }
 
 //VerifySignature implements oidc.KeySet by getting the public key from Storage implementation
-func (k *jwtProfileKeySet) VerifySignature(ctx context.Context, jws *jose.JSONWebSignature) (payload []byte, err error) {
+func (k *jwtProfileKeySet) VerifySignature(ctx context.Context, r *http.Request, jws *jose.JSONWebSignature) (payload []byte, err error) {
 	keyID, _ := oidc.GetKeyIDAndAlg(jws)
 	key, err := k.storage.GetKeyByIDAndUserID(ctx, keyID, k.userID)
 	if err != nil {

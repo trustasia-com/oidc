@@ -1,7 +1,6 @@
 package op
 
 import (
-	"context"
 	"net/http"
 	"net/url"
 	"strings"
@@ -14,7 +13,7 @@ type Revoker interface {
 	Decoder() httphelper.Decoder
 	Crypto() Crypto
 	Storage() Storage
-	AccessTokenVerifier() AccessTokenVerifier
+	AccessTokenVerifier(r *http.Request) AccessTokenVerifier
 	AuthMethodPrivateKeyJWTSupported() bool
 	AuthMethodPostSupported() bool
 }
@@ -36,7 +35,7 @@ func Revoke(w http.ResponseWriter, r *http.Request, revoker Revoker) {
 		RevocationRequestError(w, r, err)
 		return
 	}
-	tokenID, subject, ok := getTokenIDAndSubjectForRevocation(r.Context(), revoker, token)
+	tokenID, subject, ok := getTokenIDAndSubjectForRevocation(r, revoker, token)
 	if ok {
 		token = tokenID
 	}
@@ -67,7 +66,7 @@ func ParseTokenRevocationRequest(r *http.Request, revoker Revoker) (token, token
 		if !ok || !revoker.AuthMethodPrivateKeyJWTSupported() {
 			return "", "", "", oidc.ErrInvalidClient().WithDescription("auth_method private_key_jwt not supported")
 		}
-		profile, err := VerifyJWTAssertion(r.Context(), req.ClientAssertion, revokerJWTProfile.JWTProfileVerifier())
+		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, revokerJWTProfile.JWTProfileVerifier())
 		if err == nil {
 			return req.Token, req.TokenTypeHint, profile.Issuer, nil
 		}
@@ -119,7 +118,7 @@ func RevocationRequestError(w http.ResponseWriter, r *http.Request, err error) {
 	httphelper.MarshalJSONWithStatus(w, e, status)
 }
 
-func getTokenIDAndSubjectForRevocation(ctx context.Context, userinfoProvider UserinfoProvider, accessToken string) (string, string, bool) {
+func getTokenIDAndSubjectForRevocation(r *http.Request, userinfoProvider UserinfoProvider, accessToken string) (string, string, bool) {
 	tokenIDSubject, err := userinfoProvider.Crypto().Decrypt(accessToken)
 	if err == nil {
 		splitToken := strings.Split(tokenIDSubject, ":")
@@ -128,7 +127,7 @@ func getTokenIDAndSubjectForRevocation(ctx context.Context, userinfoProvider Use
 		}
 		return splitToken[0], splitToken[1], true
 	}
-	accessTokenClaims, err := VerifyAccessToken(ctx, accessToken, userinfoProvider.AccessTokenVerifier())
+	accessTokenClaims, err := VerifyAccessToken(r.Context(), r, accessToken, userinfoProvider.AccessTokenVerifier(r))
 	if err != nil {
 		return "", "", false
 	}

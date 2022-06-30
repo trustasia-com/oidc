@@ -62,7 +62,7 @@ func VerifyIDToken(ctx context.Context, token string, v IDTokenVerifier) (oidc.I
 		return nil, err
 	}
 
-	if err = oidc.CheckSignature(ctx, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
+	if err = oidc.CheckSignature(ctx, nil, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
 		return nil, err
 	}
 

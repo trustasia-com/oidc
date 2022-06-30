@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"gopkg.in/square/go-jose.v2"
@@ -23,8 +24,8 @@ type AuthStorage interface {
 	TerminateSession(ctx context.Context, userID string, clientID string) error
 	RevokeToken(ctx context.Context, token string, userID string, clientID string) *oidc.Error
 
-	GetSigningKey(context.Context, chan<- jose.SigningKey)
-	GetKeySet(context.Context) (*jose.JSONWebKeySet, error)
+	GetSigningKey(ctx context.Context, r *http.Request) (jose.SigningKey, error)
+	GetKeySet(ctx context.Context, r *http.Request) (*jose.JSONWebKeySet, error)
 }
 
 type ClientCredentialsStorage interface {

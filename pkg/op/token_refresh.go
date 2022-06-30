@@ -28,12 +28,12 @@ func RefreshTokenExchange(w http.ResponseWriter, r *http.Request, exchanger Exch
 	if err != nil {
 		RequestError(w, r, err)
 	}
-	validatedRequest, client, err := ValidateRefreshTokenRequest(r.Context(), tokenReq, exchanger)
+	validatedRequest, client, err := ValidateRefreshTokenRequest(r.Context(), r, tokenReq, exchanger)
 	if err != nil {
 		RequestError(w, r, err)
 		return
 	}
-	resp, err := CreateTokenResponse(r.Context(), validatedRequest, client, exchanger, true, "", tokenReq.RefreshToken)
+	resp, err := CreateTokenResponse(r.Context(), r, validatedRequest, client, exchanger, true, "", tokenReq.RefreshToken)
 	if err != nil {
 		RequestError(w, r, err)
 		return
@@ -53,11 +53,11 @@ func ParseRefreshTokenRequest(r *http.Request, decoder httphelper.Decoder) (*oid
 
 //ValidateRefreshTokenRequest validates the refresh_token request parameters including authorization check of the client
 //and returns the data representing the original auth request corresponding to the refresh_token
-func ValidateRefreshTokenRequest(ctx context.Context, tokenReq *oidc.RefreshTokenRequest, exchanger Exchanger) (RefreshTokenRequest, Client, error) {
+func ValidateRefreshTokenRequest(ctx context.Context, r *http.Request, tokenReq *oidc.RefreshTokenRequest, exchanger Exchanger) (RefreshTokenRequest, Client, error) {
 	if tokenReq.RefreshToken == "" {
 		return nil, nil, oidc.ErrInvalidRequest().WithDescription("refresh_token missing")
 	}
-	request, client, err := AuthorizeRefreshClient(ctx, tokenReq, exchanger)
+	request, client, err := AuthorizeRefreshClient(ctx, r, tokenReq, exchanger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -88,13 +88,13 @@ func ValidateRefreshTokenScopes(requestedScopes []string, authRequest RefreshTok
 
 //AuthorizeRefreshClient checks the authorization of the client and that the used method was the one previously registered.
 //It than returns the data representing the original auth request corresponding to the refresh_token
-func AuthorizeRefreshClient(ctx context.Context, tokenReq *oidc.RefreshTokenRequest, exchanger Exchanger) (request RefreshTokenRequest, client Client, err error) {
+func AuthorizeRefreshClient(ctx context.Context, r *http.Request, tokenReq *oidc.RefreshTokenRequest, exchanger Exchanger) (request RefreshTokenRequest, client Client, err error) {
 	if tokenReq.ClientAssertionType == oidc.ClientAssertionTypeJWTAssertion {
 		jwtExchanger, ok := exchanger.(JWTAuthorizationGrantExchanger)
 		if !ok || !exchanger.AuthMethodPrivateKeyJWTSupported() {
 			return nil, nil, errors.New("auth_method private_key_jwt not supported")
 		}
-		client, err = AuthorizePrivateJWTKey(ctx, tokenReq.ClientAssertion, jwtExchanger)
+		client, err = AuthorizePrivateJWTKey(ctx, r, tokenReq.ClientAssertion, jwtExchanger)
 		if err != nil {
 			return nil, nil, err
 		}

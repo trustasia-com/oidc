@@ -13,7 +13,7 @@ type Introspector interface {
 	Decoder() httphelper.Decoder
 	Crypto() Crypto
 	Storage() Storage
-	AccessTokenVerifier() AccessTokenVerifier
+	AccessTokenVerifier(r *http.Request) AccessTokenVerifier
 }
 
 type IntrospectorJWTProfile interface {
@@ -34,7 +34,7 @@ func Introspect(w http.ResponseWriter, r *http.Request, introspector Introspecto
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	tokenID, subject, ok := getTokenIDAndSubject(r.Context(), introspector, token)
+	tokenID, subject, ok := getTokenIDAndSubject(r.Context(), r, introspector, token)
 	if !ok {
 		httphelper.MarshalJSON(w, response)
 		return
@@ -62,7 +62,7 @@ func ParseTokenIntrospectionRequest(r *http.Request, introspector Introspector) 
 		return "", "", errors.New("unable to parse request")
 	}
 	if introspectorJWTProfile, ok := introspector.(IntrospectorJWTProfile); ok && req.ClientAssertion != "" {
-		profile, err := VerifyJWTAssertion(r.Context(), req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier())
+		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier())
 		if err == nil {
 			return req.Token, profile.Issuer, nil
 		}

@@ -2,6 +2,7 @@ package op
 
 import (
 	"errors"
+	"net/http"
 	"net/url"
 	"os"
 
@@ -11,7 +12,7 @@ import (
 const OidcDevMode = "CAOS_OIDC_DEV"
 
 type Configuration interface {
-	Issuer() string
+	Issuer(r *http.Request) string
 	AuthorizationEndpoint() Endpoint
 	TokenEndpoint() Endpoint
 	IntrospectionEndpoint() Endpoint

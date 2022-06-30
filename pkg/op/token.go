@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/trustasia-com/oidc/pkg/crypto"
@@ -10,8 +11,8 @@ import (
 )
 
 type TokenCreator interface {
-	Issuer() string
-	Signer() Signer
+	Issuer(r *http.Request) string
+	Signer(r *http.Request) (Signer, error)
 	Storage() Storage
 	Crypto() Crypto
 }
@@ -22,17 +23,21 @@ type TokenRequest interface {
 	GetScopes() []string
 }
 
-func CreateTokenResponse(ctx context.Context, request IDTokenRequest, client Client, creator TokenCreator, createAccessToken bool, code, refreshToken string) (*oidc.AccessTokenResponse, error) {
+func CreateTokenResponse(ctx context.Context, r *http.Request, request IDTokenRequest, client Client, creator TokenCreator, createAccessToken bool, code, refreshToken string) (*oidc.AccessTokenResponse, error) {
 	var accessToken, newRefreshToken string
 	var validity time.Duration
 	if createAccessToken {
 		var err error
-		accessToken, newRefreshToken, validity, err = CreateAccessToken(ctx, request, client.AccessTokenType(), creator, client, refreshToken)
+		accessToken, newRefreshToken, validity, err = CreateAccessToken(ctx, r, request, client.AccessTokenType(), creator, client, refreshToken)
 		if err != nil {
 			return nil, err
 		}
 	}
-	idToken, err := CreateIDToken(ctx, creator.Issuer(), request, client.IDTokenLifetime(), accessToken, code, creator.Storage(), creator.Signer(), client)
+	singer, err := creator.Signer(r)
+	if err != nil {
+		return nil, err
+	}
+	idToken, err := CreateIDToken(ctx, creator.Issuer(r), request, client.IDTokenLifetime(), accessToken, code, creator.Storage(), singer, client)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +81,7 @@ func needsRefreshToken(tokenRequest TokenRequest, client Client) bool {
 	}
 }
 
-func CreateAccessToken(ctx context.Context, tokenRequest TokenRequest, accessTokenType AccessTokenType, creator TokenCreator, client Client, refreshToken string) (accessToken, newRefreshToken string, validity time.Duration, err error) {
+func CreateAccessToken(ctx context.Context, r *http.Request, tokenRequest TokenRequest, accessTokenType AccessTokenType, creator TokenCreator, client Client, refreshToken string) (accessToken, newRefreshToken string, validity time.Duration, err error) {
 	id, newRefreshToken, exp, err := createTokens(ctx, tokenRequest, creator.Storage(), refreshToken, client)
 	if err != nil {
 		return "", "", 0, err
@@ -86,8 +91,13 @@ func CreateAccessToken(ctx context.Context, tokenRequest TokenRequest, accessTok
 		clockSkew = client.ClockSkew()
 	}
 	validity = exp.Add(clockSkew).Sub(time.Now().UTC())
+
+	singer, err := creator.Signer(r)
+	if err != nil {
+		return "", "", 0, err
+	}
 	if accessTokenType == AccessTokenTypeJWT {
-		accessToken, err = CreateJWT(ctx, creator.Issuer(), tokenRequest, exp, id, creator.Signer(), client, creator.Storage())
+		accessToken, err = CreateJWT(ctx, creator.Issuer(r), tokenRequest, exp, id, singer, client, creator.Storage())
 		return
 	}
 	accessToken, err = CreateBearerToken(id, tokenRequest.GetSubject(), creator.Crypto())

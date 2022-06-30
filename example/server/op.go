@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"crypto/sha256"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -62,11 +61,11 @@ func main() {
 
 	//the provider will only take care of the OpenID Protocol, so there must be some sort of UI for the login process
 	//for the simplicity of the example this means a simple page with username and password field
-	l := NewLogin(storage, op.AuthCallbackURL(provider))
-
-	//regardless of how many pages / steps there are in the process, the UI must be registered in the router,
-	//so we will direct all calls to /login to the login UI
-	router.PathPrefix("/login/").Handler(http.StripPrefix("/login", l.router))
+	//l := NewLogin(storage, op.AuthCallbackURL(provider,nil))
+	//
+	////regardless of how many pages / steps there are in the process, the UI must be registered in the router,
+	////so we will direct all calls to /login to the login UI
+	//router.PathPrefix("/login/").Handler(http.StripPrefix("/login", l.router))
 
 	//we register the http handler of the OP on the root, so that the discovery endpoint (/.well-known/openid-configuration)
 	//is served on the correct path
@@ -91,7 +90,7 @@ func main() {
 //it will enable all options (see descriptions)
 func newOP(ctx context.Context, storage op.Storage, port string, key [32]byte) (op.OpenIDProvider, error) {
 	config := &op.Config{
-		Issuer:    fmt.Sprintf("http://localhost:%s/", port),
+		//Issuer:    fmt.Sprintf("http://localhost:%s/", port),
 		CryptoKey: key,
 
 		//will be used if the end_session endpoint is called without a post_logout_redirect_uri

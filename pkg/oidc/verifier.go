@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
 
@@ -127,7 +128,7 @@ func CheckAuthorizedParty(claims Claims, clientID string) error {
 	return nil
 }
 
-func CheckSignature(ctx context.Context, token string, payload []byte, claims ClaimsSignature, supportedSigAlgs []string, set KeySet) error {
+func CheckSignature(ctx context.Context, r *http.Request, token string, payload []byte, claims ClaimsSignature, supportedSigAlgs []string, set KeySet) error {
 	jws, err := jose.ParseSigned(token)
 	if err != nil {
 		return ErrParse
@@ -146,7 +147,7 @@ func CheckSignature(ctx context.Context, token string, payload []byte, claims Cl
 		return fmt.Errorf("%w: id token signed with unsupported algorithm, expected %q got %q", ErrSignatureUnsupportedAlg, supportedSigAlgs, sig.Header.Algorithm)
 	}
 
-	signedPayload, err := set.VerifySignature(ctx, jws)
+	signedPayload, err := set.VerifySignature(ctx, r, jws)
 	if err != nil {
 		return fmt.Errorf("%w (%v)", ErrSignatureInvalid, err)
 	}

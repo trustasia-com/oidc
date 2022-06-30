@@ -2,6 +2,7 @@ package op
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/trustasia-com/oidc/pkg/oidc"
@@ -57,7 +58,7 @@ func NewAccessTokenVerifier(issuer string, keySet oidc.KeySet) AccessTokenVerifi
 }
 
 //VerifyAccessToken validates the access token (issuer, signature and expiration)
-func VerifyAccessToken(ctx context.Context, token string, v AccessTokenVerifier) (oidc.AccessTokenClaims, error) {
+func VerifyAccessToken(ctx context.Context, r *http.Request, token string, v AccessTokenVerifier) (oidc.AccessTokenClaims, error) {
 	claims := oidc.EmptyAccessTokenClaims()
 
 	decrypted, err := oidc.DecryptToken(token)
@@ -73,7 +74,7 @@ func VerifyAccessToken(ctx context.Context, token string, v AccessTokenVerifier)
 		return nil, err
 	}
 
-	if err = oidc.CheckSignature(ctx, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
+	if err = oidc.CheckSignature(ctx, r, decrypted, payload, claims, v.SupportedSignAlgs(), v.KeySet()); err != nil {
 		return nil, err
 	}
 

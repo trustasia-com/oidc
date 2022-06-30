@@ -14,7 +14,7 @@ type UserinfoProvider interface {
 	Decoder() httphelper.Decoder
 	Crypto() Crypto
 	Storage() Storage
-	AccessTokenVerifier() AccessTokenVerifier
+	AccessTokenVerifier(r *http.Request) AccessTokenVerifier
 }
 
 func userinfoHandler(userinfoProvider UserinfoProvider) func(http.ResponseWriter, *http.Request) {
@@ -29,7 +29,7 @@ func Userinfo(w http.ResponseWriter, r *http.Request, userinfoProvider UserinfoP
 		http.Error(w, "access token missing", http.StatusUnauthorized)
 		return
 	}
-	tokenID, subject, ok := getTokenIDAndSubject(r.Context(), userinfoProvider, accessToken)
+	tokenID, subject, ok := getTokenIDAndSubject(r.Context(), r, userinfoProvider, accessToken)
 	if !ok {
 		http.Error(w, "access token invalid", http.StatusUnauthorized)
 		return
@@ -72,7 +72,7 @@ func getAccessToken(r *http.Request) (string, error) {
 	return parts[1], nil
 }
 
-func getTokenIDAndSubject(ctx context.Context, userinfoProvider UserinfoProvider, accessToken string) (string, string, bool) {
+func getTokenIDAndSubject(ctx context.Context, r *http.Request, userinfoProvider UserinfoProvider, accessToken string) (string, string, bool) {
 	tokenIDSubject, err := userinfoProvider.Crypto().Decrypt(accessToken)
 	if err == nil {
 		splitToken := strings.Split(tokenIDSubject, ":")
@@ -81,7 +81,7 @@ func getTokenIDAndSubject(ctx context.Context, userinfoProvider UserinfoProvider
 		}
 		return splitToken[0], splitToken[1], true
 	}
-	accessTokenClaims, err := VerifyAccessToken(ctx, accessToken, userinfoProvider.AccessTokenVerifier())
+	accessTokenClaims, err := VerifyAccessToken(ctx, r, accessToken, userinfoProvider.AccessTokenVerifier(r))
 	if err != nil {
 		return "", "", false
 	}

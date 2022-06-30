@@ -3,9 +3,11 @@ package op
 import (
 	"context"
 	"errors"
+	"fmt"
+
+	"gopkg.in/square/go-jose.v2"
 
 	"github.com/zitadel/logging"
-	"gopkg.in/square/go-jose.v2"
 )
 
 type Signer interface {
@@ -20,20 +22,13 @@ type tokenSigner struct {
 	alg     jose.SignatureAlgorithm
 }
 
-func NewSigner(ctx context.Context, storage AuthStorage, keyCh <-chan jose.SigningKey) Signer {
+func NewSigner(storage AuthStorage, key jose.SigningKey) (Signer, error) {
 	s := &tokenSigner{
 		storage: storage,
 	}
+	err := s.exchangeSigningKey(key)
 
-	select {
-	case <-ctx.Done():
-		return nil
-	case key := <-keyCh:
-		s.exchangeSigningKey(key)
-	}
-	go s.refreshSigningKey(ctx, keyCh)
-
-	return s
+	return s, err
 }
 
 func (s *tokenSigner) Health(_ context.Context) error {
@@ -61,20 +56,19 @@ func (s *tokenSigner) refreshSigningKey(ctx context.Context, keyCh <-chan jose.S
 	}
 }
 
-func (s *tokenSigner) exchangeSigningKey(key jose.SigningKey) {
+func (s *tokenSigner) exchangeSigningKey(key jose.SigningKey) error {
 	s.alg = key.Algorithm
 	if key.Algorithm == "" || key.Key == nil {
 		s.signer = nil
-		logging.Warn("signer has no key")
-		return
+		return errors.New("signer has no key")
 	}
 	var err error
 	s.signer, err = jose.NewSigner(key, &jose.SignerOptions{})
 	if err != nil {
 		logging.New().WithError(err).Error("error creating signer")
-		return
+		return fmt.Errorf("error creating signer,%s", err.Error())
 	}
-	logging.Info("signer exchanged signing key")
+	return nil
 }
 
 func (s *tokenSigner) SignatureAlgorithm() jose.SignatureAlgorithm {

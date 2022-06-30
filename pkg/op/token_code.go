@@ -19,12 +19,12 @@ func CodeExchange(w http.ResponseWriter, r *http.Request, exchanger Exchanger) {
 		RequestError(w, r, oidc.ErrInvalidRequest().WithDescription("code missing"))
 		return
 	}
-	authReq, client, err := ValidateAccessTokenRequest(r.Context(), tokenReq, exchanger)
+	authReq, client, err := ValidateAccessTokenRequest(r.Context(), r, tokenReq, exchanger)
 	if err != nil {
 		RequestError(w, r, err)
 		return
 	}
-	resp, err := CreateTokenResponse(r.Context(), authReq, client, exchanger, true, tokenReq.Code, "")
+	resp, err := CreateTokenResponse(r.Context(), r, authReq, client, exchanger, true, tokenReq.Code, "")
 	if err != nil {
 		RequestError(w, r, err)
 		return
@@ -44,8 +44,8 @@ func ParseAccessTokenRequest(r *http.Request, decoder httphelper.Decoder) (*oidc
 
 //ValidateAccessTokenRequest validates the token request parameters including authorization check of the client
 //and returns the previous created auth request corresponding to the auth code
-func ValidateAccessTokenRequest(ctx context.Context, tokenReq *oidc.AccessTokenRequest, exchanger Exchanger) (AuthRequest, Client, error) {
-	authReq, client, err := AuthorizeCodeClient(ctx, tokenReq, exchanger)
+func ValidateAccessTokenRequest(ctx context.Context, r *http.Request, tokenReq *oidc.AccessTokenRequest, exchanger Exchanger) (AuthRequest, Client, error) {
+	authReq, client, err := AuthorizeCodeClient(ctx, r, tokenReq, exchanger)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -63,13 +63,13 @@ func ValidateAccessTokenRequest(ctx context.Context, tokenReq *oidc.AccessTokenR
 
 //AuthorizeCodeClient checks the authorization of the client and that the used method was the one previously registered.
 //It than returns the auth request corresponding to the auth code
-func AuthorizeCodeClient(ctx context.Context, tokenReq *oidc.AccessTokenRequest, exchanger Exchanger) (request AuthRequest, client Client, err error) {
+func AuthorizeCodeClient(ctx context.Context, r *http.Request, tokenReq *oidc.AccessTokenRequest, exchanger Exchanger) (request AuthRequest, client Client, err error) {
 	if tokenReq.ClientAssertionType == oidc.ClientAssertionTypeJWTAssertion {
 		jwtExchanger, ok := exchanger.(JWTAuthorizationGrantExchanger)
 		if !ok || !exchanger.AuthMethodPrivateKeyJWTSupported() {
 			return nil, nil, oidc.ErrInvalidClient().WithDescription("auth_method private_key_jwt not supported")
 		}
-		client, err = AuthorizePrivateJWTKey(ctx, tokenReq.ClientAssertion, jwtExchanger)
+		client, err = AuthorizePrivateJWTKey(ctx, r, tokenReq.ClientAssertion, jwtExchanger)
 		if err != nil {
 			return nil, nil, err
 		}

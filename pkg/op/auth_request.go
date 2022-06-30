@@ -37,10 +37,10 @@ type Authorizer interface {
 	Storage() Storage
 	Decoder() httphelper.Decoder
 	Encoder() httphelper.Encoder
-	Signer() Signer
-	IDTokenHintVerifier() IDTokenHintVerifier
+	Signer(r *http.Request) (Signer, error)
+	IDTokenHintVerifier(r *http.Request) IDTokenHintVerifier
 	Crypto() Crypto
-	Issuer() string
+	Issuer(r *http.Request) string
 	RequestObjectSupported() bool
 }
 
@@ -48,7 +48,7 @@ type Authorizer interface {
 //implementing its own validation mechanism for the auth request
 type AuthorizeValidator interface {
 	Authorizer
-	ValidateAuthRequest(context.Context, *oidc.AuthRequest, Storage, IDTokenHintVerifier) (string, error)
+	ValidateAuthRequest(context.Context, *http.Request, *oidc.AuthRequest, Storage, IDTokenHintVerifier) (string, error)
 }
 
 func authorizeHandler(authorizer Authorizer) func(http.ResponseWriter, *http.Request) {
@@ -72,7 +72,7 @@ func Authorize(w http.ResponseWriter, r *http.Request, authorizer Authorizer) {
 		return
 	}
 	if authReq.RequestParam != "" && authorizer.RequestObjectSupported() {
-		authReq, err = ParseRequestObject(r.Context(), authReq, authorizer.Storage(), authorizer.Issuer())
+		authReq, err = ParseRequestObject(r.Context(), r, authReq, authorizer.Storage(), authorizer.Issuer(r))
 		if err != nil {
 			AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 			return
@@ -82,7 +82,7 @@ func Authorize(w http.ResponseWriter, r *http.Request, authorizer Authorizer) {
 	if validater, ok := authorizer.(AuthorizeValidator); ok {
 		validation = validater.ValidateAuthRequest
 	}
-	userID, err := validation(r.Context(), authReq, authorizer.Storage(), authorizer.IDTokenHintVerifier())
+	userID, err := validation(r.Context(), r, authReq, authorizer.Storage(), authorizer.IDTokenHintVerifier(r))
 	if err != nil {
 		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 		return
@@ -120,7 +120,7 @@ func ParseAuthorizeRequest(r *http.Request, decoder httphelper.Decoder) (*oidc.A
 
 //ParseRequestObject parse the `request` parameter, validates the token including the signature
 //and copies the token claims into the auth request
-func ParseRequestObject(ctx context.Context, authReq *oidc.AuthRequest, storage Storage, issuer string) (*oidc.AuthRequest, error) {
+func ParseRequestObject(ctx context.Context, r *http.Request, authReq *oidc.AuthRequest, storage Storage, issuer string) (*oidc.AuthRequest, error) {
 	requestObject := new(oidc.RequestObject)
 	payload, err := oidc.ParseToken(authReq.RequestParam, requestObject)
 	if err != nil {
@@ -140,7 +140,7 @@ func ParseRequestObject(ctx context.Context, authReq *oidc.AuthRequest, storage 
 		return authReq, oidc.ErrInvalidRequest()
 	}
 	keySet := &jwtProfileKeySet{storage, requestObject.Issuer}
-	if err = oidc.CheckSignature(ctx, authReq.RequestParam, payload, requestObject, nil, keySet); err != nil {
+	if err = oidc.CheckSignature(ctx, r, authReq.RequestParam, payload, requestObject, nil, keySet); err != nil {
 		return authReq, err
 	}
 	CopyRequestObjectToAuthRequest(authReq, requestObject)
@@ -196,7 +196,7 @@ func CopyRequestObjectToAuthRequest(authReq *oidc.AuthRequest, requestObject *oi
 }
 
 //ValidateAuthRequest validates the authorize parameters and returns the userID of the id_token_hint if passed
-func ValidateAuthRequest(ctx context.Context, authReq *oidc.AuthRequest, storage Storage, verifier IDTokenHintVerifier) (sub string, err error) {
+func ValidateAuthRequest(ctx context.Context, r *http.Request, authReq *oidc.AuthRequest, storage Storage, verifier IDTokenHintVerifier) (sub string, err error) {
 	authReq.MaxAge, err = ValidateAuthReqPrompt(authReq.Prompt, authReq.MaxAge)
 	if err != nil {
 		return "", err
@@ -209,13 +209,13 @@ func ValidateAuthRequest(ctx context.Context, authReq *oidc.AuthRequest, storage
 	if err != nil {
 		return "", err
 	}
-	if err := ValidateAuthReqRedirectURI(client, authReq.RedirectURI, authReq.ResponseType); err != nil {
+	if err = ValidateAuthReqRedirectURI(client, authReq.RedirectURI, authReq.ResponseType); err != nil {
 		return "", err
 	}
-	if err := ValidateAuthReqResponseType(client, authReq.ResponseType); err != nil {
+	if err = ValidateAuthReqResponseType(client, authReq.ResponseType); err != nil {
 		return "", err
 	}
-	return ValidateAuthReqIDTokenHint(ctx, authReq.IDTokenHint, verifier)
+	return ValidateAuthReqIDTokenHint(ctx, r, authReq.IDTokenHint, verifier)
 }
 
 //ValidateAuthReqPrompt validates the passed prompt values and sets max_age to 0 if prompt login is present
@@ -356,11 +356,11 @@ func ValidateAuthReqResponseType(client Client, responseType oidc.ResponseType) 
 
 //ValidateAuthReqIDTokenHint validates the id_token_hint (if passed as parameter in the request)
 //and returns the `sub` claim
-func ValidateAuthReqIDTokenHint(ctx context.Context, idTokenHint string, verifier IDTokenHintVerifier) (string, error) {
+func ValidateAuthReqIDTokenHint(ctx context.Context, r *http.Request, idTokenHint string, verifier IDTokenHintVerifier) (string, error) {
 	if idTokenHint == "" {
 		return "", nil
 	}
-	claims, err := VerifyIDTokenHint(ctx, idTokenHint, verifier)
+	claims, err := VerifyIDTokenHint(ctx, r, idTokenHint, verifier)
 	if err != nil {
 		return "", oidc.ErrLoginRequired().WithDescription("The id_token_hint is invalid. " +
 			"If you have any questions, you may contact the administrator of the application.")
@@ -432,7 +432,7 @@ func AuthResponseCode(w http.ResponseWriter, r *http.Request, authReq AuthReques
 //AuthResponseToken creates the successful token(s) authentication response
 func AuthResponseToken(w http.ResponseWriter, r *http.Request, authReq AuthRequest, authorizer Authorizer, client Client) {
 	createAccessToken := authReq.GetResponseType() != oidc.ResponseTypeIDTokenOnly
-	resp, err := CreateTokenResponse(r.Context(), authReq, client, authorizer, createAccessToken, "", "")
+	resp, err := CreateTokenResponse(r.Context(), r, authReq, client, authorizer, createAccessToken, "", "")
 	if err != nil {
 		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 		return
