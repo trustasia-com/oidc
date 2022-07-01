@@ -76,7 +76,7 @@ func ValidateClientCredentialsRequest(ctx context.Context, request *oidc.ClientC
 		return nil, nil, err
 	}
 
-	tokenRequest, err := storage.ClientCredentialsTokenRequest(ctx, request.ClientID, request.Scope)
+	tokenRequest, err := storage.ClientCredentialsTokenRequest(ctx, request.ClientID, request.Audience, request.Scope)
 	if err != nil {
 		return nil, nil, err
 	}
