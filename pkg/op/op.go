@@ -97,7 +97,7 @@ func authCallbackPath(o OpenIDProvider) string {
 }
 
 type Config struct {
-	//Issuer                   string
+	IssuerPrefix             string
 	CryptoKey                [32]byte
 	DefaultLogoutRedirectURI string
 	CodeMethodS256           bool
@@ -183,6 +183,7 @@ func (o *openidProvider) Issuer(r *http.Request) string {
 	url := url2.URL{
 		Scheme: scheme,
 		Host:   r.Host,
+		Path:   o.config.IssuerPrefix,
 	}
 	return url.String()
 }
