@@ -56,7 +56,7 @@ var DefaultSupportedScopes = []string{
 }
 
 func Scopes(c Configuration) []string {
-	return DefaultSupportedScopes //TODO: config
+	return c.GetScopesSupported()
 }
 
 func ResponseTypes(c Configuration) []string {
@@ -88,32 +88,7 @@ func GrantTypes(c Configuration) []oidc.GrantType {
 }
 
 func SupportedClaims(c Configuration) []string {
-	return []string{ //TODO: config
-		"sub",
-		"aud",
-		"exp",
-		"iat",
-		"iss",
-		"auth_time",
-		"nonce",
-		"acr",
-		"amr",
-		"c_hash",
-		"at_hash",
-		"act",
-		"scopes",
-		"client_id",
-		"azp",
-		"preferred_username",
-		"name",
-		"family_name",
-		"given_name",
-		"locale",
-		"email",
-		"email_verified",
-		"phone_number",
-		"phone_number_verified",
-	}
+	return c.GetSupportedClaims()
 }
 
 func SigAlgorithms(s Signer) []string {
@@ -170,7 +145,8 @@ func AuthMethodsRevocationEndpoint(c Configuration) []oidc.AuthMethod {
 }
 
 func CodeChallengeMethods(c Configuration) []oidc.CodeChallengeMethod {
-	codeMethods := make([]oidc.CodeChallengeMethod, 0, 1)
+	codeMethods := make([]oidc.CodeChallengeMethod, 0, 2)
+	codeMethods = append(codeMethods, oidc.CodeChallengeMethodPlain)
 	if c.CodeMethodS256Supported() {
 		codeMethods = append(codeMethods, oidc.CodeChallengeMethodS256)
 	}

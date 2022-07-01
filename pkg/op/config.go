@@ -35,6 +35,8 @@ type Configuration interface {
 	RevocationEndpointSigningAlgorithmsSupported() []string
 	RequestObjectSupported() bool
 	RequestObjectSigningAlgorithmsSupported() []string
+	GetSupportedClaims() []string
+	GetScopesSupported() []string
 
 	SupportedUILocales() []language.Tag
 }
