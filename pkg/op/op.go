@@ -105,9 +105,9 @@ type Config struct {
 	AuthMethodPrivateKeyJWT  bool
 	GrantTypeRefreshToken    bool
 	RequestObjectSupported   bool
-	claimsSupported          []string
-	scopesSupported          []string
-	grantTypesSupported      []string
+	ClaimsSupported          []string
+	ScopesSupported          []string
+	GrantTypesSupported      []string
 	SupportedUILocales       []language.Tag
 }
 
@@ -249,11 +249,11 @@ func (o *openidProvider) GrantTypeClientCredentialsSupported() bool {
 }
 
 func (o *openidProvider) GetSupportedClaims() []string {
-	return o.config.claimsSupported
+	return o.config.ClaimsSupported
 }
 
 func (o *openidProvider) GetScopesSupported() []string {
-	return o.config.scopesSupported
+	return o.config.ScopesSupported
 }
 
 func (o *openidProvider) IntrospectionAuthMethodPrivateKeyJWTSupported() bool {
