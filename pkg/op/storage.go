@@ -29,7 +29,7 @@ type AuthStorage interface {
 }
 
 type ClientCredentialsStorage interface {
-	ClientCredentialsTokenRequest(ctx context.Context, clientID string, scopes []string) (TokenRequest, error)
+	ClientCredentialsTokenRequest(ctx context.Context, clientID string, audience string, scopes []string) (TokenRequest, error)
 }
 
 type OPStorage interface {
