@@ -32,6 +32,7 @@ type AccessTokenClaims interface {
 	GetSubject() string
 	GetTokenID() string
 	SetPrivateClaims(map[string]interface{})
+	SetScopes(scopes []string)
 }
 
 type IDTokenClaims interface {
@@ -150,6 +151,11 @@ func (a *accessTokenClaims) GetTokenID() string {
 //SetPrivateClaims implements the AccessTokenClaims interface
 func (a *accessTokenClaims) SetPrivateClaims(claims map[string]interface{}) {
 	a.claims = claims
+}
+
+// SetScopes set scopes
+func (a *accessTokenClaims) SetScopes(scopes []string) {
+	a.Scopes = scopes
 }
 
 func (a *accessTokenClaims) MarshalJSON() ([]byte, error) {

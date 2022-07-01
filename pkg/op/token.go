@@ -117,6 +117,7 @@ func CreateJWT(ctx context.Context, issuer string, tokenRequest TokenRequest, ex
 			return "", err
 		}
 		claims.SetPrivateClaims(privateClaims)
+		claims.SetScopes(tokenRequest.GetScopes())
 	}
 	return crypto.Sign(claims, signer.Signer())
 }
