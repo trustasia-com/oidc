@@ -368,7 +368,7 @@ func ValidateAuthReqIDTokenHint(ctx context.Context, r *http.Request, idTokenHin
 
 //RedirectToLogin redirects the end user to the Login UI for authentication
 func RedirectToLogin(client Client, w http.ResponseWriter, r *http.Request) {
-	login := client.LoginURL(r.PostForm.Encode())
+	login := client.LoginURL(r.Form.Encode())
 	http.Redirect(w, r, login, http.StatusFound)
 }
 
