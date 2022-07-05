@@ -44,7 +44,7 @@ func CreateTokenResponse(ctx context.Context, r *http.Request, request IDTokenRe
 
 	var state string
 	if authRequest, ok := request.(AuthRequest); ok {
-		err = creator.Storage().DeleteAuthRequest(ctx, authRequest.GetID())
+		err = creator.Storage().DeleteAuthRequest(ctx, authRequest.GetCode())
 		if err != nil {
 			return nil, err
 		}

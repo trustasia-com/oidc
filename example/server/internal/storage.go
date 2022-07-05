@@ -152,9 +152,9 @@ func (s *storage) AuthRequestByCode(ctx context.Context, code string) (op.AuthRe
 //SaveAuthCode implements the op.Storage interface
 //it will be called after the authentication has been successful and before redirecting the user agent to the redirect_uri
 //(in an authorization code flow)
-func (s *storage) SaveAuthCode(ctx context.Context, id string, code string) error {
+func (s *storage) SaveAuthCode(ctx context.Context, id string, auReq op.AuthRequest) error {
 	//for this example we'll just save the authRequestID to the code
-	s.codes[code] = id
+	//s.codes[code] = id
 	return nil
 }
 

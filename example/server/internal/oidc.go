@@ -21,6 +21,7 @@ const (
 
 type AuthRequest struct {
 	ID            string
+	Code          string
 	CreationDate  time.Time
 	ApplicationID string
 	CallbackURI   string
@@ -40,6 +41,9 @@ type AuthRequest struct {
 }
 
 func (a *AuthRequest) GetID() string {
+	return a.ID
+}
+func (a *AuthRequest) GetCode() string {
 	return a.ID
 }
 

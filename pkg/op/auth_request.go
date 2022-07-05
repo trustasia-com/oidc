@@ -8,15 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/gorilla/mux"
-
 	httphelper "github.com/trustasia-com/oidc/pkg/http"
 	"github.com/trustasia-com/oidc/pkg/oidc"
 	str "github.com/trustasia-com/oidc/pkg/strings"
 )
 
 type AuthRequest interface {
-	GetID() string
+	GetCode() string
 	GetACR() string
 	GetAMR() []string
 	GetAudience() []string
@@ -101,7 +99,7 @@ func Authorize(w http.ResponseWriter, r *http.Request, authorizer Authorizer) {
 		AuthRequestError(w, r, req, oidc.DefaultToServerError(err, "unable to retrieve client by id"), authorizer.Encoder())
 		return
 	}
-	RedirectToLogin(req.GetID(), client, w, r)
+	RedirectToLogin(client, w, r)
 }
 
 //ParseAuthorizeRequest parsed the http request into an oidc.AuthRequest
@@ -369,28 +367,44 @@ func ValidateAuthReqIDTokenHint(ctx context.Context, r *http.Request, idTokenHin
 }
 
 //RedirectToLogin redirects the end user to the Login UI for authentication
-func RedirectToLogin(authReqID string, client Client, w http.ResponseWriter, r *http.Request) {
-	login := client.LoginURL(authReqID)
+func RedirectToLogin(client Client, w http.ResponseWriter, r *http.Request) {
+	login := client.LoginURL(r.PostForm.Encode())
 	http.Redirect(w, r, login, http.StatusFound)
 }
 
 //AuthorizeCallback handles the callback after authentication in the Login UI
 func AuthorizeCallback(w http.ResponseWriter, r *http.Request, authorizer Authorizer) {
-	params := mux.Vars(r)
-	id := params["id"]
-
-	authReq, err := authorizer.Storage().AuthRequestByID(r.Context(), id)
+	authReq, err := ParseAuthorizeRequest(r, authorizer.Decoder())
 	if err != nil {
-		AuthRequestError(w, r, nil, err, authorizer.Encoder())
+		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 		return
 	}
-	if !authReq.Done() {
-		AuthRequestError(w, r, authReq,
-			oidc.ErrInteractionRequired().WithDescription("Unfortunately, the user may be not logged in and/or additional interaction is required."),
-			authorizer.Encoder())
+	if authReq.RequestParam != "" && authorizer.RequestObjectSupported() {
+		authReq, err = ParseRequestObject(r.Context(), r, authReq, authorizer.Storage(), authorizer.Issuer(r))
+		if err != nil {
+			AuthRequestError(w, r, authReq, err, authorizer.Encoder())
+			return
+		}
+	}
+	validation := ValidateAuthRequest
+	if validater, ok := authorizer.(AuthorizeValidator); ok {
+		validation = validater.ValidateAuthRequest
+	}
+	userID, err := validation(r.Context(), r, authReq, authorizer.Storage(), authorizer.IDTokenHintVerifier(r))
+	if err != nil {
+		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 		return
 	}
-	AuthResponse(authReq, authorizer, w, r)
+	if authReq.RequestParam != "" {
+		AuthRequestError(w, r, authReq, oidc.ErrRequestNotSupported(), authorizer.Encoder())
+		return
+	}
+	req, err := authorizer.Storage().CreateAuthRequest(r.Context(), authReq, userID)
+	if err != nil {
+		AuthRequestError(w, r, authReq, oidc.DefaultToServerError(err, "unable to save auth request"), authorizer.Encoder())
+		return
+	}
+	AuthResponse(req, authorizer, w, r)
 }
 
 //AuthResponse creates the successful authentication response (either code or tokens)
@@ -409,7 +423,7 @@ func AuthResponse(authReq AuthRequest, authorizer Authorizer, w http.ResponseWri
 
 //AuthResponseCode creates the successful code authentication response
 func AuthResponseCode(w http.ResponseWriter, r *http.Request, authReq AuthRequest, authorizer Authorizer) {
-	code, err := CreateAuthRequestCode(r.Context(), authReq, authorizer.Storage(), authorizer.Crypto())
+	code, err := CreateAuthRequestCode(r.Context(), authReq, authorizer.Storage())
 	if err != nil {
 		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
 		return
@@ -446,20 +460,11 @@ func AuthResponseToken(w http.ResponseWriter, r *http.Request, authReq AuthReque
 }
 
 //CreateAuthRequestCode creates and stores a code for the auth code response
-func CreateAuthRequestCode(ctx context.Context, authReq AuthRequest, storage Storage, crypto Crypto) (string, error) {
-	code, err := BuildAuthRequestCode(authReq, crypto)
-	if err != nil {
+func CreateAuthRequestCode(ctx context.Context, authReq AuthRequest, storage Storage) (string, error) {
+	if err := storage.SaveAuthCode(ctx, authReq.GetCode(), authReq); err != nil {
 		return "", err
 	}
-	if err := storage.SaveAuthCode(ctx, authReq.GetID(), code); err != nil {
-		return "", err
-	}
-	return code, nil
-}
-
-//BuildAuthRequestCode builds the string representation of the auth code
-func BuildAuthRequestCode(authReq AuthRequest, crypto Crypto) (string, error) {
-	return crypto.Encrypt(authReq.GetID())
+	return authReq.GetCode(), nil
 }
 
 //AuthResponseURL encodes the authorization response (successful and error) and sets it as query or fragment values
