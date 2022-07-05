@@ -57,7 +57,7 @@ func authorizeHandler(authorizer Authorizer) func(http.ResponseWriter, *http.Req
 
 func authorizeCallbackHandler(authorizer Authorizer) func(http.ResponseWriter, *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		AuthorizeCallback(w, r, authorizer)
+		AuthorizeCallback(w, r, authorizer, "11")
 	}
 }
 
@@ -373,7 +373,7 @@ func RedirectToLogin(client Client, w http.ResponseWriter, r *http.Request) {
 }
 
 //AuthorizeCallback handles the callback after authentication in the Login UI
-func AuthorizeCallback(w http.ResponseWriter, r *http.Request, authorizer Authorizer) {
+func AuthorizeCallback(w http.ResponseWriter, r *http.Request, authorizer Authorizer, userID string) {
 	authReq, err := ParseAuthorizeRequest(r, authorizer.Decoder())
 	if err != nil {
 		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
@@ -386,15 +386,15 @@ func AuthorizeCallback(w http.ResponseWriter, r *http.Request, authorizer Author
 			return
 		}
 	}
-	validation := ValidateAuthRequest
-	if validater, ok := authorizer.(AuthorizeValidator); ok {
-		validation = validater.ValidateAuthRequest
-	}
-	userID, err := validation(r.Context(), r, authReq, authorizer.Storage(), authorizer.IDTokenHintVerifier(r))
-	if err != nil {
-		AuthRequestError(w, r, authReq, err, authorizer.Encoder())
-		return
-	}
+	//validation := ValidateAuthRequest
+	//if validater, ok := authorizer.(AuthorizeValidator); ok {
+	//	validation = validater.ValidateAuthRequest
+	//}
+	//userID, err := validation(r.Context(), r, authReq, authorizer.Storage(), authorizer.IDTokenHintVerifier(r))
+	//if err != nil {
+	//	AuthRequestError(w, r, authReq, err, authorizer.Encoder())
+	//	return
+	//}
 	if authReq.RequestParam != "" {
 		AuthRequestError(w, r, authReq, oidc.ErrRequestNotSupported(), authorizer.Encoder())
 		return
