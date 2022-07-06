@@ -176,9 +176,9 @@ type openidProvider struct {
 
 func (o *openidProvider) Issuer(r *http.Request) string {
 
-	scheme := "http"
-	if r.TLS != nil {
-		scheme = "https"
+	scheme := "https"
+	if r.Header.Get("X-Forwarded-Proto") == "" {
+		scheme = "http"
 	}
 	url := url2.URL{
 		Scheme: scheme,
