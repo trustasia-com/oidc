@@ -49,6 +49,7 @@ type OpenIDProvider interface {
 	Decoder() httphelper.Decoder
 	Encoder() httphelper.Encoder
 	IDTokenHintVerifier(r *http.Request) IDTokenHintVerifier
+	JWTProfileVerifier(r *http.Request) JWTProfileVerifier
 	AccessTokenVerifier(r *http.Request) AccessTokenVerifier
 	Crypto() Crypto
 	DefaultLogoutRedirectURI() string
