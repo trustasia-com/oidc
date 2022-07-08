@@ -117,7 +117,7 @@ func AuthorizeCodeChallenge(tokenReq *oidc.AccessTokenRequest, challenge *oidc.C
 //AuthorizePrivateJWTKey authorizes a client by validating the client_assertion's signature with a previously
 //registered public key (JWT Profile)
 func AuthorizePrivateJWTKey(ctx context.Context, r *http.Request, clientAssertion string, exchanger JWTAuthorizationGrantExchanger) (Client, error) {
-	jwtReq, err := VerifyJWTAssertion(ctx, r, clientAssertion, exchanger.JWTProfileVerifier())
+	jwtReq, err := VerifyJWTAssertion(ctx, r, clientAssertion, exchanger.JWTProfileVerifier(r))
 	if err != nil {
 		return nil, err
 	}
