@@ -18,7 +18,7 @@ type Introspector interface {
 
 type IntrospectorJWTProfile interface {
 	Introspector
-	JWTProfileVerifier() JWTProfileVerifier
+	JWTProfileVerifier(r *http.Request) JWTProfileVerifier
 }
 
 func introspectionHandler(introspector Introspector) func(http.ResponseWriter, *http.Request) {
@@ -62,7 +62,7 @@ func ParseTokenIntrospectionRequest(r *http.Request, introspector Introspector) 
 		return "", "", errors.New("unable to parse request")
 	}
 	if introspectorJWTProfile, ok := introspector.(IntrospectorJWTProfile); ok && req.ClientAssertion != "" {
-		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier())
+		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier(r))
 		if err == nil {
 			return req.Token, profile.Issuer, nil
 		}
