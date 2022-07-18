@@ -20,7 +20,7 @@ type Revoker interface {
 
 type RevokerJWTProfile interface {
 	Revoker
-	JWTProfileVerifier() JWTProfileVerifier
+	JWTProfileVerifier(r *http.Request) JWTProfileVerifier
 }
 
 func revocationHandler(revoker Revoker) func(http.ResponseWriter, *http.Request) {
@@ -66,7 +66,7 @@ func ParseTokenRevocationRequest(r *http.Request, revoker Revoker) (token, token
 		if !ok || !revoker.AuthMethodPrivateKeyJWTSupported() {
 			return "", "", "", oidc.ErrInvalidClient().WithDescription("auth_method private_key_jwt not supported")
 		}
-		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, revokerJWTProfile.JWTProfileVerifier())
+		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, revokerJWTProfile.JWTProfileVerifier(r))
 		if err == nil {
 			return req.Token, req.TokenTypeHint, profile.Issuer, nil
 		}
