@@ -62,10 +62,11 @@ func ParseTokenIntrospectionRequest(r *http.Request, introspector Introspector) 
 		return "", "", errors.New("unable to parse request")
 	}
 	if introspectorJWTProfile, ok := introspector.(IntrospectorJWTProfile); ok && req.ClientAssertion != "" {
-		profile, err := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier(r))
-		if err == nil {
-			return req.Token, profile.Issuer, nil
+		profile, errv := VerifyJWTAssertion(r.Context(), r, req.ClientAssertion, introspectorJWTProfile.JWTProfileVerifier(r))
+		if errv != nil {
+			return "", "", errv
 		}
+		return req.Token, profile.Issuer, nil
 	}
 	clientID, clientSecret, ok := r.BasicAuth()
 	if ok {
@@ -82,5 +83,5 @@ func ParseTokenIntrospectionRequest(r *http.Request, introspector Introspector) 
 		}
 		return req.Token, clientID, nil
 	}
-	return "", "", err
+	return "", "", errors.New("invalid authorization")
 }
