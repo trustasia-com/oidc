@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/sirupsen/logrus"
 	httphelper "github.com/trustasia-com/oidc/pkg/http"
 	"github.com/trustasia-com/oidc/pkg/oidc"
 )
@@ -83,6 +84,7 @@ func getTokenIDAndSubject(ctx context.Context, r *http.Request, userinfoProvider
 	}
 	accessTokenClaims, err := VerifyAccessToken(ctx, r, accessToken, userinfoProvider.AccessTokenVerifier(r))
 	if err != nil {
+		logrus.Debugf("VerifyAccessToken err:%s", err.Error())
 		return "", "", false
 	}
 	return accessTokenClaims.GetTokenID(), accessTokenClaims.GetSubject(), true

@@ -70,7 +70,7 @@ func VerifyAccessToken(ctx context.Context, r *http.Request, token string, v Acc
 		return nil, err
 	}
 
-	if err := oidc.CheckIssuer(claims, v.Issuer()); err != nil {
+	if err = oidc.CheckIssuer(claims, v.Issuer()); err != nil {
 		return nil, err
 	}
 
